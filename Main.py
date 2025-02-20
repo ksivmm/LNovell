@@ -23,15 +23,6 @@ class NovelApp:
                 description TEXT
             )
         """)
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS chapters (
-                id INTEGER PRIMARY KEY,
-                novel_id INTEGER,
-                title TEXT,
-                content TEXT,
-                FOREIGN KEY (novel_id) REFERENCES novels (id)
-            )
-        """)
         self.conn.commit()
 
     def create_main_page(self):
@@ -57,13 +48,15 @@ class NovelApp:
         row_num, col_num = 0, 0
 
         for novel_id, title, cover_data in self.cursor.fetchall():
-            # Обрабатываем обложку
-            if cover_data:
+            # Проверка, что данные обложки действительно бинарные
+            if cover_data and isinstance(cover_data, bytes):
                 image = Image.open(io.BytesIO(cover_data))
-                image = image.resize((161, 225))
-                novel_cover = ImageTk.PhotoImage(image)
             else:
-                novel_cover = ImageTk.PhotoImage(Image.new("RGB", (161, 225), "gray"))
+                # Заглушка, если нет изображения
+                image = Image.new("RGB", (161, 225), "gray")
+
+            image = image.resize((161, 225))
+            novel_cover = ImageTk.PhotoImage(image)
 
             cover_label = ttk.Label(self.novel_frame, image=novel_cover)
             cover_label.image = novel_cover
@@ -84,28 +77,23 @@ class NovelApp:
         self.novel_frame.pack(fill="both", expand=True)
 
         self.cursor.execute("SELECT title, cover, description FROM novels WHERE id=?", (novel_id,))
-        title, cover_data, description = self.cursor.fetchone()
-
-        if cover_data:
-            image = Image.open(io.BytesIO(cover_data))
-            image = image.resize((161, 225))
-            novel_cover = ImageTk.PhotoImage(image)
+        result = self.cursor.fetchone()
+        if result:
+            title, cover_data, description = result
         else:
-            novel_cover = ImageTk.PhotoImage(Image.new("RGB", (161, 225), "gray"))
+            return
+
+        if cover_data and isinstance(cover_data, bytes):
+            image = Image.open(io.BytesIO(cover_data))
+        else:
+            image = Image.new("RGB", (161, 225), "gray")
+
+        image = image.resize((161, 225))
+        novel_cover = ImageTk.PhotoImage(image)
 
         ttk.Label(self.novel_frame, image=novel_cover).pack(pady=10)
         ttk.Label(self.novel_frame, text=description).pack(pady=10)
 
-        self.chapter_list = ttk.Treeview(self.novel_frame, columns=("Title"), show="headings")
-        self.chapter_list.heading("Title", text="Title")
-        self.chapter_list.pack(fill="both", expand=True)
-        self.chapter_list.bind("<Double-1>", self.open_chapter_page)
-
-        self.cursor.execute("SELECT title FROM chapters WHERE novel_id=?", (novel_id,))
-        for (chapter_title,) in self.cursor.fetchall():
-            self.chapter_list.insert("", "end", values=(chapter_title,))
-
-        ttk.Button(self.novel_frame, text="Add Chapter", command=lambda: self.open_add_chapter_page(novel_id)).pack(pady=10)
         ttk.Button(self.novel_frame, text="Back", command=self.back_to_main).pack(pady=10)
 
     def open_add_novel_page(self):
@@ -149,14 +137,6 @@ class NovelApp:
         """Возвращает на главную страницу после добавления новеллы"""
         self.add_novel_frame.pack_forget()
         self.create_main_page()
-
-    def open_chapter_page(self, event):
-        """Открывает страницу главы (пока не реализовано)"""
-        messagebox.showinfo("Navigation", "This functionality is not implemented yet.")
-
-    def open_add_chapter_page(self, novel_id):
-        """Добавление главы (упрощённое)"""
-        messagebox.showinfo("Feature", "Adding chapters will be implemented later.")
 
     def back_to_main(self):
         """Возвращает на главную страницу"""
