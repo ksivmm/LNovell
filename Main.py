@@ -63,8 +63,6 @@ class NovelApp:
             cover_label = ttk.Label(self.novel_frame, image=novel_cover)
             cover_label.image = novel_cover
             cover_label.grid(row=row_num, column=col_num, padx=5, pady=5)
-            
-            # Исправленный обработчик нажатия
             cover_label.bind("<Button-1>", lambda e, novel_id=novel_id: self.open_novel_page(novel_id))
 
             ttk.Label(self.novel_frame, text=title, width=20, anchor="center").grid(row=row_num+1, column=col_num, padx=5, pady=5)
@@ -117,16 +115,42 @@ class NovelApp:
         chapter = self.cursor.fetchone()
 
         if chapter:
-            for widget in self.root.winfo_children():
-                widget.destroy()
+            self.display_chapter(chapter)
 
-            ttk.Label(self.root, text=chapter[2], font=("Arial", 16)).pack(pady=10)
+    def display_chapter(self, chapter):
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-            text_widget = tk.Text(self.root)
-            text_widget.pack(fill="both", expand=True)
-            text_widget.insert("1.0", chapter[3])
+        chapter_id, novel_id, title, content = chapter
 
-            ttk.Button(self.root, text="Back", command=lambda: self.open_novel_page(chapter[1])).pack(pady=10)
+        ttk.Label(self.root, text=title, font=("Arial", 16)).pack(pady=10)
+
+        text_widget = tk.Text(self.root, wrap="word")
+        text_widget.pack(fill="both", expand=True)
+        text_widget.insert("1.0", content)
+        text_widget.config(state="disabled")
+
+        nav_frame = ttk.Frame(self.root)
+        nav_frame.pack(pady=10)
+
+        prev_chapter = self.get_prev_chapter(chapter_id, novel_id)
+        next_chapter = self.get_next_chapter(chapter_id, novel_id)
+
+        if prev_chapter:
+            ttk.Button(nav_frame, text="Previous", command=lambda: self.display_chapter(prev_chapter)).pack(side="left")
+
+        ttk.Button(nav_frame, text="Back", command=lambda: self.open_novel_page(novel_id)).pack(side="left")
+
+        if next_chapter:
+            ttk.Button(nav_frame, text="Next", command=lambda: self.display_chapter(next_chapter)).pack(side="left")
+
+    def get_prev_chapter(self, chapter_id, novel_id):
+        self.cursor.execute("SELECT * FROM chapters WHERE novel_id=? AND id < ? ORDER BY id DESC LIMIT 1", (novel_id, chapter_id))
+        return self.cursor.fetchone()
+
+    def get_next_chapter(self, chapter_id, novel_id):
+        self.cursor.execute("SELECT * FROM chapters WHERE novel_id=? AND id > ? ORDER BY id ASC LIMIT 1", (novel_id, chapter_id))
+        return self.cursor.fetchone()
 
     def open_add_novel_page(self):
         for widget in self.root.winfo_children():
