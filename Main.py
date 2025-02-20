@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 import sqlite3
 import io
 import random
+import time
 
 class NovelApp:
     def __init__(self, root):
@@ -16,6 +17,10 @@ class NovelApp:
         self.cursor = None
         self.create_db()
         self.create_main_page()
+        self.scroll_direction = 1  # Направление прокрутки (1 - вниз, -1 - вверх)
+        self.scroll_offset = 0  # Смещение для анимации
+        self.scrolling = False  # Флаг анимации
+        self.start_scrolling()  # Запуск анимации прокрутки
 
     def create_db(self):
         try:
@@ -87,6 +92,31 @@ class NovelApp:
         self.novel_frame.configure(style="TFrame")
         self.load_novels()
 
+    def start_scrolling(self):
+        if not self.scrolling:
+            self.scrolling = True
+            self.animate_scroll()
+
+    def stop_scrolling(self):
+        self.scrolling = False
+
+    def animate_scroll(self):
+        if not self.scrolling:
+            return
+
+        # Плавная прокрутка сетки новелл
+        max_offset = 50  # Максимальное смещение для анимации
+        self.scroll_offset += self.scroll_direction * 2  # Скорость прокрутки
+
+        if abs(self.scroll_offset) >= max_offset:
+            self.scroll_direction *= -1  # Смена направления
+            self.scroll_offset = max_offset if self.scroll_direction == -1 else -max_offset
+
+        for widget in self.novel_frame.winfo_children():
+            widget.place_configure(y=widget.winfo_y() + self.scroll_direction * 2)
+
+        self.root.after(50, self.animate_scroll)  # Повторяем каждые 50 мс
+
     def search_novels(self):
         search_query = self.search_entry.get().strip()
         for widget in self.novel_frame.winfo_children():
@@ -114,28 +144,30 @@ class NovelApp:
                 if cover_data and isinstance(cover_data, bytes):
                     image = Image.open(io.BytesIO(cover_data))
                 else:
-                    image = Image.new("RGB", (200, 280), "gray")
+                    image = Image.new("RGB", (161, 225), "gray")  # Размер обложки 161x225
 
-                image = image.resize((200, 280))
+                image = image.resize((161, 225))
                 novel_cover = ImageTk.PhotoImage(image)
 
-                novel_card = ttk.Frame(self.novel_frame, style="Custom.TFrame")
+                # Блок карты новеллы 177x317
+                novel_card = ttk.Frame(self.novel_frame, style="Custom.TFrame", width=177, height=317)
                 novel_card.grid(row=row_num, column=col_num, padx=5, pady=5)
 
-                cover_label = ttk.Label(novel_card, image=novel_cover)
+                # Обложка
+                cover_label = ttk.Label(novel_card, image=novel_cover, background="#2a2a2a")
                 cover_label.image = novel_cover
-                cover_label.pack(pady=5)
+                cover_label.place(x=8, y=8, width=161, height=225)  # Позиция и размер обложки
 
-                # Убрали рейтинг под обложкой
+                # Название новеллы (161x36)
                 title_label = ttk.Label(novel_card, text=title, foreground="white", background="#2a2a2a", 
-                                       font=("Arial", 12, "bold"), wraplength=200, justify="center")
-                title_label.pack(pady=2)
+                                       font=("Arial", 12, "bold"), wraplength=161, justify="center")
+                title_label.place(x=8, y=233, width=161, height=36)  # Позиция и размер названия
 
-                # Оставляем только "Новелла" как тег
+                # Надпись "Новелла" (161x15)
                 tags_text = "Новелла"
                 tags_label = ttk.Label(novel_card, text=tags_text, foreground="#a0a0a0", background="#2a2a2a", 
-                                      font=("Arial", 8), wraplength=200, justify="center")
-                tags_label.pack(pady=(0, 5))
+                                      font=("Arial", 8), wraplength=161, justify="center")
+                tags_label.place(x=8, y=269, width=161, height=15)  # Позиция и размер тега
 
                 novel_card.bind("<Button-1>", lambda e, nid=novel_id: self.open_novel_page(nid))
 
