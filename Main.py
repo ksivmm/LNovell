@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
 import sqlite3
 import io
@@ -12,7 +12,6 @@ class NovelApp:
         self.create_main_page()
 
     def create_db(self):
-        """Создаёт базу данных, если она отсутствует"""
         self.conn = sqlite3.connect("novels.db")
         self.cursor = self.conn.cursor()
         self.cursor.execute("""
@@ -26,21 +25,16 @@ class NovelApp:
         self.conn.commit()
 
     def create_main_page(self):
-        """Создаёт главную страницу каталога"""
-        self.main_frame = ttk.Frame(self.root)
-        self.main_frame.pack(fill="both", expand=True)
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-        ttk.Label(self.main_frame, text="Catalog of Novels").pack(pady=10)
-
-        self.novel_frame = ttk.Frame(self.main_frame)
+        ttk.Label(self.root, text="Catalog of Novels").pack(pady=10)
+        self.novel_frame = ttk.Frame(self.root)
         self.novel_frame.pack(fill="both", expand=True)
-
         self.load_novels()
-
-        ttk.Button(self.main_frame, text="Add Novel", command=self.open_add_novel_page).pack(pady=10)
+        ttk.Button(self.root, text="Add Novel", command=self.open_add_novel_page).pack(pady=10)
 
     def load_novels(self):
-        """Загружает список новелл с обложками"""
         for widget in self.novel_frame.winfo_children():
             widget.destroy()
 
@@ -48,11 +42,9 @@ class NovelApp:
         row_num, col_num = 0, 0
 
         for novel_id, title, cover_data in self.cursor.fetchall():
-            # Проверка, что данные обложки действительно бинарные
             if cover_data and isinstance(cover_data, bytes):
                 image = Image.open(io.BytesIO(cover_data))
             else:
-                # Заглушка, если нет изображения
                 image = Image.new("RGB", (161, 225), "gray")
 
             image = image.resize((161, 225))
@@ -70,77 +62,36 @@ class NovelApp:
                 col_num = 0
                 row_num += 2
 
-    def open_novel_page(self, novel_id):
-        """Открывает страницу новеллы"""
-        self.main_frame.pack_forget()
-        self.novel_frame = ttk.Frame(self.root)
-        self.novel_frame.pack(fill="both", expand=True)
-
-        self.cursor.execute("SELECT title, cover, description FROM novels WHERE id=?", (novel_id,))
-        result = self.cursor.fetchone()
-        if result:
-            title, cover_data, description = result
-        else:
-            return
-
-        if cover_data and isinstance(cover_data, bytes):
-            image = Image.open(io.BytesIO(cover_data))
-        else:
-            image = Image.new("RGB", (161, 225), "gray")
-
-        image = image.resize((161, 225))
-        novel_cover = ImageTk.PhotoImage(image)
-
-        ttk.Label(self.novel_frame, image=novel_cover).pack(pady=10)
-        ttk.Label(self.novel_frame, text=description).pack(pady=10)
-
-        ttk.Button(self.novel_frame, text="Back", command=self.back_to_main).pack(pady=10)
-
     def open_add_novel_page(self):
-        """Открывает страницу добавления новеллы"""
-        self.main_frame.pack_forget()
-        self.add_novel_frame = ttk.Frame(self.root)
-        self.add_novel_frame.pack(fill="both", expand=True)
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-        ttk.Label(self.add_novel_frame, text="Title:").pack(pady=5)
-        self.novel_title_entry = ttk.Entry(self.add_novel_frame)
+        ttk.Label(self.root, text="Title:").pack(pady=5)
+        self.novel_title_entry = ttk.Entry(self.root)
         self.novel_title_entry.pack(pady=5)
 
-        ttk.Label(self.add_novel_frame, text="Cover:").pack(pady=5)
-        ttk.Button(self.add_novel_frame, text="Upload Cover", command=self.upload_cover).pack(pady=5)
-
-        ttk.Label(self.add_novel_frame, text="Description:").pack(pady=5)
-        self.novel_description_entry = ttk.Entry(self.add_novel_frame)
+        ttk.Button(self.root, text="Upload Cover", command=self.upload_cover).pack(pady=5)
+        ttk.Label(self.root, text="Description:").pack(pady=5)
+        self.novel_description_entry = ttk.Entry(self.root)
         self.novel_description_entry.pack(pady=5)
 
-        ttk.Button(self.add_novel_frame, text="Add Novel", command=self.add_novel).pack(pady=10)
-        ttk.Button(self.add_novel_frame, text="Back", command=self.back_to_main_from_add).pack(pady=10)
+        ttk.Button(self.root, text="Add Novel", command=self.add_novel).pack(pady=10)
+        ttk.Button(self.root, text="Back", command=self.create_main_page).pack(pady=10)
 
         self.cover_data = None
 
     def upload_cover(self):
-        """Загружает обложку и сохраняет её в переменную"""
         file_path = filedialog.askopenfilename()
         if file_path:
             with open(file_path, "rb") as file:
                 self.cover_data = file.read()
 
     def add_novel(self):
-        """Добавляет новеллу в базу данных"""
         title = self.novel_title_entry.get()
         description = self.novel_description_entry.get()
-        self.cursor.execute("INSERT INTO novels (title, cover, description) VALUES (?, ?, ?)", (title, self.cover_data, description))
-        self.conn.commit()
-        self.back_to_main_from_add()
-
-    def back_to_main_from_add(self):
-        """Возвращает на главную страницу после добавления новеллы"""
-        self.add_novel_frame.pack_forget()
-        self.create_main_page()
-
-    def back_to_main(self):
-        """Возвращает на главную страницу"""
-        self.novel_frame.pack_forget()
+        if title and self.cover_data:
+            self.cursor.execute("INSERT INTO novels (title, cover, description) VALUES (?, ?, ?)", (title, self.cover_data, description))
+            self.conn.commit()
         self.create_main_page()
 
 if __name__ == "__main__":
