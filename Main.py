@@ -57,10 +57,7 @@ class NovelApp:
         col_num = 0
         for row in self.cursor.fetchall():
             cover_data = row[2]
-            if cover_data:
-                novel_cover = PhotoImage(data=cover_data)
-            else:
-                novel_cover = PhotoImage(width=161, height=225)  # Placeholder if no cover
+            novel_cover = PhotoImage(width=161, height=225)  # Заглушка
 
             cover_label = ttk.Label(self.novel_frame, image=novel_cover)
             cover_label.image = novel_cover
@@ -74,7 +71,8 @@ class NovelApp:
             if col_num == 7:
                 col_num = 0
                 row_num += 2 
-def open_novel_page(self, novel_id):
+
+    def open_novel_page(self, novel_id):
         self.main_frame.pack_forget()
         self.novel_frame = ttk.Frame(self.root)
         self.novel_frame.pack(fill="both", expand=True)
@@ -83,10 +81,7 @@ def open_novel_page(self, novel_id):
         novel = self.cursor.fetchone()
 
         cover_data = novel[2]
-        if cover_data:
-            novel_cover = PhotoImage(data=cover_data)
-        else:
-            novel_cover = PhotoImage(width=161, height=225)
+        novel_cover = PhotoImage(width=161, height=225)  # Заглушка
 
         self.novel_cover = ttk.Label(self.novel_frame, image=novel_cover)
         self.novel_cover.image = novel_cover
@@ -111,8 +106,11 @@ def open_novel_page(self, novel_id):
         self.back_button.pack(pady=10)
 
     def open_chapter_page(self, event):
-        selected_item = self.chapter_list.selection()[0]
-        chapter_title = self.chapter_list.item(selected_item, "values")[0]
+        selected_item = self.chapter_list.selection()
+        if not selected_item:
+            return
+
+        chapter_title = self.chapter_list.item(selected_item[0], "values")[0]
         self.cursor.execute("SELECT * FROM chapters WHERE title=?", (chapter_title,))
         chapter = self.cursor.fetchone()
 
@@ -133,9 +131,6 @@ def open_novel_page(self, novel_id):
         self.back_button = ttk.Button(self.nav_frame, text="Back", command=self.back_to_novel)
         self.back_button.pack(side="left")
 
-        self.next_button = ttk.Button(self.nav_frame, text="Next", command=self.next_chapter)
-        self.next_button.pack(side="left")
-
     def back_to_main(self):
         self.novel_frame.pack_forget()
         self.main_frame.pack(fill="both", expand=True)
@@ -143,9 +138,6 @@ def open_novel_page(self, novel_id):
     def back_to_novel(self):
         self.chapter_frame.pack_forget()
         self.novel_frame.pack(fill="both", expand=True)
-
-    def next_chapter(self):
-        messagebox.showinfo("Navigation", "This functionality is not implemented yet.")
 
     def open_add_novel_page(self):
         self.main_frame.pack_forget()
@@ -170,9 +162,6 @@ def open_novel_page(self, novel_id):
         self.add_button = ttk.Button(self.add_novel_frame, text="Add Novel", command=self.add_novel)
         self.add_button.pack(pady=10)
 
-        self.back_button = ttk.Button(self.add_novel_frame, text="Back", command=self.back_to_main_from_add)
-        self.back_button.pack(pady=10)
-
         self.cover_data = None
 
     def upload_cover(self):
@@ -183,55 +172,11 @@ def open_novel_page(self, novel_id):
 
     def add_novel(self):
         title = self.novel_title_entry.get()
-        cover = self.cover_data
         description = self.novel_description_entry.get()
-        self.cursor.execute("INSERT INTO novels (title, cover, description) VALUES (?, ?, ?)", (title, cover, description))
+        self.cursor.execute("INSERT INTO novels (title, cover, description) VALUES (?, ?, ?)", (title, self.cover_data, description))
         self.conn.commit()
-        self.back_to_main_from_add()
+        self.back_to_main()
         self.load_novels()
-
-    def back_to_main_from_add(self):
-        self.add_novel_frame.pack_forget()
-        self.main_frame.pack(fill="both", expand=True)
-
-    def open_add_chapter_page(self, novel_id):
-        self.novel_frame.pack_forget()
-        self.add_chapter_frame = ttk.Frame(self.root)
-        self.add_chapter_frame.pack(fill="both", expand=True)
-
-        self.chapter_title_label = ttk.Label(self.add_chapter_frame, text="Chapter Title:")
-        self.chapter_title_label.pack(pady=10)
-        self.chapter_title_entry = ttk.Entry(self.add_chapter_frame)
-        self.chapter_title_entry.pack(pady=10)
-
-        self.chapter_content_label = ttk.Label(self.add_chapter_frame, text="Content:")
-        self.chapter_content_label.pack(pady=10)
-        self.chapter_content_entry = tk.Text(self.add_chapter_frame)
-        self.chapter_content_entry.pack(pady=10)
-
-        self.add_button = ttk.Button(self.add_chapter_frame, text="Add Chapter", command=lambda: self.add_chapter(novel_id))
-        self.add_button.pack(pady=10)
-
-        self.back_button = ttk.Button(self.add_chapter_frame, text="Back", command=self.back_to_novel_from_add)
-        self.back_button.pack(pady=10)
-
-    def add_chapter(self, novel_id):
-        title = self.chapter_title_entry.get()
-        content = self.chapter_content_entry.get("1.0", "end")
-        self.cursor.execute("INSERT INTO chapters (novel_id, title, content) VALUES (?, ?, ?)", (novel_id, title, content))
-        self.conn.commit()
-        self.back_to_novel_from_add()
-        self.load_chapters(novel_id)
-
-    def back_to_novel_from_add(self):
-        self.add_chapter_frame.pack_forget()
-        self.novel_frame.pack(fill="both", expand=True)
-
-    def load_chapters(self, novel_id):
-        self.chapter_list.delete(*self.chapter_list.get_children())
-        self.cursor.execute("SELECT * FROM chapters WHERE novel_id=?", (novel_id,))
-        for row in self.cursor.fetchall():
-            self.chapter_list.insert("", "end", values=(row[2],))
 
 if __name__ == "__main__":
     root = tk.Tk()
