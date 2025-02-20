@@ -39,6 +39,12 @@ class NovelApp:
                     FOREIGN KEY (novel_id) REFERENCES novels (id)
                 )
             """)
+            # Если таблица chapters уже существует с update_date, удаляем эту колонку
+            try:
+                self.cursor.execute("ALTER TABLE chapters DROP COLUMN update_date")
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                pass  # Колонка уже удалена или не существует
             self.conn.commit()
         except sqlite3.Error as e:
             messagebox.showerror("Ошибка", f"Не удалось создать базу данных: {e}")
@@ -252,7 +258,7 @@ class NovelApp:
             widget.destroy()
 
         self.root.configure(bg="#000000")  # Черный фон
-        chapter_id, novel_id, title, content, _ = chapter  # Убрали update_date
+        chapter_id, novel_id, title, content = chapter  # Убрали update_date
 
         main_frame = ttk.Frame(self.root, style="TFrame")
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
