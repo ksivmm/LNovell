@@ -119,7 +119,7 @@ class NovelApp:
                 cover_label.image = novel_cover
                 cover_label.pack(pady=5)
 
-                rating = round(random.uniform(8.0, 9.9), 1)
+                rating = round(random.uniform(8.0, 9.9), 1)  # Оставляем рейтинг в формате X.X/10
                 rating_label = ttk.Label(novel_card, text=f"{rating}/10", style="Rating.TLabel", width=5)
                 rating_label.pack(pady=(0, 5))
 
@@ -168,36 +168,38 @@ class NovelApp:
                 main_frame = ttk.Frame(self.root, style="TFrame")
                 main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-                cover_frame = ttk.Frame(main_frame, style="Cover.TFrame", width=200, height=280)
-                cover_frame.pack(pady=10)
+                # Обложка слева
+                cover_frame = ttk.Frame(main_frame, style="Cover.TFrame")
+                cover_frame.pack(side="left", padx=10, pady=10)
                 cover_label = ttk.Label(cover_frame, image=novel_cover, background="#000000")
                 cover_label.image = novel_cover
-                cover_label.place(relx=0.5, rely=0.5, anchor="center")
+                cover_label.pack()
 
+                # Информация справа
                 info_frame = ttk.Frame(main_frame, style="TFrame")
-                info_frame.pack(fill="x", pady=5)
+                info_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
                 title_label = ttk.Label(info_frame, text=novel[1], font=("Arial", 20, "bold"), 
                                        foreground="white", background="#000000")
                 title_label.pack(pady=5)
 
-                rating = round(random.uniform(4.0, 5.0), 2) * 1000
-                rating_label = ttk.Label(info_frame, text=f"{rating:.0f}", font=("Arial", 14), 
+                rating = round(random.uniform(8.0, 9.9), 1)  # Рейтинг в формате X.X/10
+                rating_label = ttk.Label(info_frame, text=f"{rating}/10", font=("Arial", 14), 
                                         foreground="#4a90e2", background="#000000")
                 rating_label.pack(pady=2)
 
                 desc = novel[3] or "Легендарный механик (Новелла)"
                 desc_label = ttk.Label(info_frame, text=desc, font=("Arial", 12), 
-                                      foreground="#a0a0a0", background="#000000", wraplength=800)
-                desc_label.pack(pady=5)
+                                      foreground="#a0a0a0", background="#000000", wraplength=600, justify="left")
+                desc_label.pack(pady=5, fill="x")
 
-                action_frame = ttk.Frame(main_frame, style="TFrame")
+                action_frame = ttk.Frame(info_frame, style="TFrame")
                 action_frame.pack(pady=10)
                 ttk.Button(action_frame, text="Читать", command=lambda: self.open_chapter_page(None), 
                           style="TButton", width=10).pack(side="left", padx=5)
                 ttk.Button(action_frame, text="Прогресс чтения", style="TButton", width=15).pack(side="left", padx=5)
 
-                chapters_frame = ttk.Frame(main_frame, style="TFrame")
+                chapters_frame = ttk.Frame(info_frame, style="TFrame")
                 chapters_frame.pack(fill="both", expand=True, pady=10)
 
                 self.chapter_list = ttk.Treeview(chapters_frame, columns=("Title"), 
@@ -212,7 +214,7 @@ class NovelApp:
 
                 self.chapter_list.bind("<Double-1>", lambda e: self.open_chapter_page(e))
 
-                nav_frame = ttk.Frame(main_frame, style="TFrame")
+                nav_frame = ttk.Frame(info_frame, style="TFrame")
                 nav_frame.pack(pady=10)
                 ttk.Button(nav_frame, text="Back", command=self.create_main_page, style="TButton").pack(side="left", pady=5)
                 ttk.Button(nav_frame, text="Add Chapter", command=lambda: self.open_add_chapter_page(novel_id), 
