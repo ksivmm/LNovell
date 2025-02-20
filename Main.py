@@ -419,4 +419,24 @@ class NovelApp:
         ttk.Button(self.root, text="Добавить главу", command=lambda: self.add_chapter(novel_id), style="TButton").pack(pady=10)
         ttk.Button(self.root, text="Назад", command=lambda: self.open_novel_page(novel_id), style="TButton").pack(pady=10)
 
-    def add_chapter(
+    def add_chapter(self, novel_id):
+        title = self.chapter_title_entry.get()
+        content = self.chapter_content_entry.get("1.0", "end").strip()
+        if not title:
+            messagebox.showerror("Ошибка", "Введите название главы!")
+            return
+        if not content:
+            messagebox.showerror("Ошибка", "Введите содержание главы!")
+            return
+        try:
+            self.cursor.execute("INSERT INTO chapters (novel_id, title, content) VALUES (?, ?, ?)",
+                               (novel_id, title, content))
+            self.conn.commit()
+            self.open_novel_page(novel_id)
+        except sqlite3.Error as e:
+            messagebox.showerror("Ошибка базы данных", f"Не удалось добавить главу: {e}")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = NovelApp(root)
+    root.mainloop()
