@@ -1,10 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 import sqlite3
 import io
 import random
-import time
 
 class NovelApp:
     def __init__(self, root):
@@ -17,10 +16,6 @@ class NovelApp:
         self.cursor = None
         self.create_db()
         self.create_main_page()
-        self.scroll_direction = 1  # Направление прокрутки (1 - вниз, -1 - вверх)
-        self.scroll_offset = 0  # Смещение для анимации
-        self.scrolling = False  # Флаг анимации
-        self.start_scrolling()  # Запуск анимации прокрутки
 
     def create_db(self):
         try:
@@ -73,7 +68,7 @@ class NovelApp:
         nav_frame.pack(fill="x", pady=10, padx=10)
 
         # "LNovell" слева
-        ttk.Label(nav_frame, text="LNovell", style="TLabel", font=("Arial", 20, "bold")).pack(side="left", padx=10)
+        ttk.Label(nav_frame, text="LNovell", style="TFrame", font=("Arial", 20, "bold")).pack(side="left", padx=10)
 
         # Кнопка "Добавить новеллу" по центру
         add_novel_btn = ttk.Button(nav_frame, text="Добавить новеллу", command=self.open_add_novel_page, style="TButton")
@@ -86,43 +81,30 @@ class NovelApp:
         self.search_entry.pack(side="left", padx=5)
         ttk.Button(search_frame, text="Поиск", command=self.search_novels, style="TButton").pack(side="left")
 
-        # Сетка новелл
-        self.novel_frame = ttk.Frame(self.root)
-        self.novel_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        self.novel_frame.configure(style="TFrame")
+        # Сетка новелл с прокруткой
+        scroll_frame = ttk.Frame(self.root)
+        scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        scroll_frame.configure(style="TFrame")
+
+        canvas = tk.Canvas(scroll_frame, bg="#000000")
+        scrollbar = ttk.Scrollbar(scroll_frame, orient="vertical", command=canvas.yview)
+        self.novel_frame = ttk.Frame(canvas)
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        canvas.create_window((0, 0), window=self.novel_frame, anchor="nw")
+
+        self.novel_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         self.load_novels()
 
-    def start_scrolling(self):
-        if not self.scrolling:
-            self.scrolling = True
-            self.animate_scroll()
-
-    def stop_scrolling(self):
-        self.scrolling = False
-
-    def animate_scroll(self):
-        if not self.scrolling:
-            return
-
-        # Плавная прокрутка сетки новелл
-        max_offset = 50  # Максимальное смещение для анимации
-        self.scroll_offset += self.scroll_direction * 2  # Скорость прокрутки
-
-        if abs(self.scroll_offset) >= max_offset:
-            self.scroll_direction *= -1  # Смена направления
-            self.scroll_offset = max_offset if self.scroll_direction == -1 else -max_offset
-
-        for widget in self.novel_frame.winfo_children():
-            widget.place_configure(y=widget.winfo_y() + self.scroll_direction * 2)
-
-        self.root.after(50, self.animate_scroll)  # Повторяем каждые 50 мс
-
     def search_novels(self):
-        search_query = self.search_entry.get().strip()
         for widget in self.novel_frame.winfo_children():
             widget.destroy()
 
         try:
+            search_query = self.search_entry.get().strip()
             if search_query:
                 self.cursor.execute("SELECT id, title, cover, description FROM novels WHERE title LIKE ?",
                                    (f"%{search_query}%",))
@@ -140,12 +122,17 @@ class NovelApp:
             style.configure("Rating.TLabel", background="#4a90e2", foreground="white", font=("Arial", 10, "bold"), 
                            borderwidth=1, relief="solid", padding=2, anchor="center")
 
+            total_width = 177 * 6 + 30  # 6 новелл по 177px + отступы
+            self.novel_frame.place(x=(self.novel_frame.winfo_screenwidth() - total_width) // 2, y=0)  # Центрирование
+
             for novel_id, title, cover_data, description in novels:
                 if cover_data and isinstance(cover_data, bytes):
                     image = Image.open(io.BytesIO(cover_data))
                 else:
                     image = Image.new("RGB", (161, 225), "gray")  # Размер обложки 161x225
 
+                # Создание обложки с закругленными углами
+                image = self.round_corners(image, 20)  # Радиус скругления 20px
                 image = image.resize((161, 225))
                 novel_cover = ImageTk.PhotoImage(image)
 
@@ -172,7 +159,7 @@ class NovelApp:
                 novel_card.bind("<Button-1>", lambda e, nid=novel_id: self.open_novel_page(nid))
 
                 col_num += 1
-                if col_num == 5:
+                if col_num == 6:  # 6 новелл по горизонтали
                     col_num = 0
                     row_num += 1
 
@@ -181,6 +168,16 @@ class NovelApp:
 
     def load_novels(self):
         self.search_novels()
+
+    def round_corners(self, image, radius):
+        """Создание изображения с закругленными углами."""
+        width, height = image.size
+        mask = Image.new("L", (width, height), 0)
+        draw = ImageDraw.Draw(mask)
+        draw.rounded_rectangle((0, 0, width, height), radius=radius, fill=255)
+        result = Image.new("RGBA", image.size)
+        result.paste(image, (0, 0), mask)
+        return result.convert("RGB")
 
     def open_novel_page(self, novel_id):
         for widget in self.root.winfo_children():
@@ -233,7 +230,7 @@ class NovelApp:
                 scrollbar.config(command=desc_widget.yview)
                 scrollbar.pack(side="right", fill="y")
 
-                # Правая сторона с списком глав и кнопками (не трогаем)
+                # Правая сторона с списком глав и кнопками
                 right_frame = ttk.Frame(main_frame, style="TFrame")
                 right_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
