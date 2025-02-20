@@ -63,13 +63,21 @@ class NovelApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Заголовок
-        ttk.Label(self.root, text="LNovell", style="TLabel").pack(pady=20)
+        # Навигационная панель
+        nav_frame = ttk.Frame(self.root, style="TFrame")
+        nav_frame.pack(fill="x", pady=10, padx=10)
 
-        # Поле поиска
-        search_frame = ttk.Frame(self.root, style="TFrame")
-        search_frame.pack(pady=10, padx=10)
-        self.search_entry = ttk.Entry(search_frame, style="TEntry", width=40)
+        # "LNovell" слева
+        ttk.Label(nav_frame, text="LNovell", style="TLabel", font=("Arial", 20, "bold")).pack(side="left", padx=10)
+
+        # Кнопка "Добавить новеллу" по центру
+        add_novel_btn = ttk.Button(nav_frame, text="Добавить новеллу", command=self.open_add_novel_page, style="TButton")
+        add_novel_btn.pack(side="left", padx=10)
+
+        # Поле поиска и кнопка "Поиск" справа
+        search_frame = ttk.Frame(nav_frame, style="TFrame")
+        search_frame.pack(side="right", padx=10)
+        self.search_entry = ttk.Entry(search_frame, style="TEntry", width=30)
         self.search_entry.pack(side="left", padx=5)
         ttk.Button(search_frame, text="Поиск", command=self.search_novels, style="TButton").pack(side="left")
 
@@ -78,7 +86,6 @@ class NovelApp:
         self.novel_frame.pack(fill="both", expand=True, padx=10, pady=10)
         self.novel_frame.configure(style="TFrame")
         self.load_novels()
-        ttk.Button(self.root, text="Добавить новеллу", command=self.open_add_novel_page, style="TButton").pack(pady=10)
 
     def search_novels(self):
         search_query = self.search_entry.get().strip()
@@ -119,10 +126,7 @@ class NovelApp:
                 cover_label.image = novel_cover
                 cover_label.pack(pady=5)
 
-                rating = round(random.uniform(8.0, 9.9), 1)  # Оставляем рейтинг в формате X.X/10
-                rating_label = ttk.Label(novel_card, text=f"{rating}/10", style="Rating.TLabel", width=5)
-                rating_label.pack(pady=(0, 5))
-
+                # Убрали рейтинг под обложкой
                 title_label = ttk.Label(novel_card, text=title, foreground="white", background="#2a2a2a", 
                                        font=("Arial", 12, "bold"), wraplength=200, justify="center")
                 title_label.pack(pady=2)
@@ -175,7 +179,7 @@ class NovelApp:
                 cover_label.image = novel_cover
                 cover_label.pack()
 
-                # Информация под обложкой
+                # Информация под обложкой (название и описание)
                 info_frame = ttk.Frame(cover_frame, style="TFrame")
                 info_frame.pack(side="top", fill="x", pady=10)
 
@@ -185,9 +189,17 @@ class NovelApp:
                 title_label.pack(pady=5)
 
                 desc = novel[3] or "Легендарный механик (Новелла)"
-                desc_label = ttk.Label(info_frame, text=desc, font=("Arial", 12), 
-                                      foreground="#a0a0a0", background="#000000", wraplength=200, justify="left")
-                desc_label.pack(pady=5)
+                # Добавляем прокрутку для описания
+                desc_frame = ttk.Frame(info_frame, style="TFrame")
+                desc_frame.pack(fill="both", expand=True)
+                scrollbar = ttk.Scrollbar(desc_frame, orient="vertical")
+                desc_widget = tk.Text(desc_frame, wrap="word", bg="#000000", fg="white", font=("Arial", 12), 
+                                     height=5, width=30, yscrollcommand=scrollbar.set)
+                desc_widget.insert("1.0", desc)
+                desc_widget.config(state="disabled")
+                desc_widget.pack(side="left", fill="both", expand=True)
+                scrollbar.config(command=desc_widget.yview)
+                scrollbar.pack(side="right", fill="y")
 
                 # Пустой фрейм справа для выравнивания
                 right_frame = ttk.Frame(main_frame, style="TFrame")
