@@ -179,19 +179,10 @@ class NovelApp:
                 info_frame = ttk.Frame(main_frame, style="TFrame")
                 info_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
+                # Только название
                 title_label = ttk.Label(info_frame, text=novel[1], font=("Arial", 20, "bold"), 
                                        foreground="white", background="#000000")
-                title_label.pack(pady=5)
-
-                rating = round(random.uniform(8.0, 9.9), 1)  # Рейтинг в формате X.X/10
-                rating_label = ttk.Label(info_frame, text=f"{rating}/10", font=("Arial", 14), 
-                                        foreground="#4a90e2", background="#000000")
-                rating_label.pack(pady=2)
-
-                desc = novel[3] or "Легендарный механик (Новелла)"
-                desc_label = ttk.Label(info_frame, text=desc, font=("Arial", 12), 
-                                      foreground="#a0a0a0", background="#000000", wraplength=600, justify="left")
-                desc_label.pack(pady=5, fill="x")
+                title_label.pack(pady=20)
 
                 action_frame = ttk.Frame(info_frame, style="TFrame")
                 action_frame.pack(pady=10)
@@ -270,13 +261,17 @@ class NovelApp:
                                foreground="white", background="#000000")
         title_label.pack(pady=10)
 
-        # Текст содержания с форматированием
+        # Текст содержания с форматированием и прокруткой
         text_frame = ttk.Frame(main_frame, style="TFrame")
         text_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        text_widget = tk.Text(text_frame, wrap="word", bg="#000000", fg="white", font=("Arial", 14), 
-                             height=30, width=100, padx=10, pady=10)
-        text_widget.pack(fill="both", expand=True)
+        # Добавляем полосу прокрутки
+        scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
+        text_widget = tk.Text(text_frame, wrap="word", bg="#000000", fg="white", font=("Arial", 12),  # Уменьшен шрифт до 12
+                             height=20, width=100, padx=10, pady=10, yscrollcommand=scrollbar.set)
+        scrollbar.config(command=text_widget.yview)
+        text_widget.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
         # Разбиваем текст на параграфы и форматируем
         paragraphs = content.split("\n\n")  # Разделяем по пустым строкам
@@ -299,9 +294,9 @@ class NovelApp:
 
         text_widget.config(state="disabled")
 
-        # Навигация
+        # Навигация (зафиксирована внизу)
         nav_frame = ttk.Frame(main_frame, style="TFrame")
-        nav_frame.pack(pady=10)
+        nav_frame.pack(side="bottom", fill="x", pady=10)
 
         prev_chapter = self.get_prev_chapter(chapter_id, novel_id)
         next_chapter = self.get_next_chapter(chapter_id, novel_id)
