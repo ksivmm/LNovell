@@ -8,7 +8,7 @@ import random
 class NovelApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Novel Catalog")
+        self.root.title("LNovell")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.geometry("1200x900")  # Увеличенный размер для большего экрана
         self.root.configure(bg="#000000")  # Черный фон
@@ -64,7 +64,7 @@ class NovelApp:
             widget.destroy()
 
         # Заголовок
-        ttk.Label(self.root, text="Catalog of Novels", style="TLabel").pack(pady=20)
+        ttk.Label(self.root, text="LNovell", style="TLabel").pack(pady=20)
 
         # Поле поиска
         search_frame = ttk.Frame(self.root, style="TFrame")
@@ -78,7 +78,7 @@ class NovelApp:
         self.novel_frame.pack(fill="both", expand=True, padx=10, pady=10)
         self.novel_frame.configure(style="TFrame")
         self.load_novels()
-        ttk.Button(self.root, text="Add Novel", command=self.open_add_novel_page, style="TButton").pack(pady=10)
+        ttk.Button(self.root, text="Добавить новеллу", command=self.open_add_novel_page, style="TButton").pack(pady=10)
 
     def search_novels(self):
         search_query = self.search_entry.get().strip()
@@ -184,12 +184,6 @@ class NovelApp:
                                        foreground="white", background="#000000")
                 title_label.pack(pady=20)
 
-                action_frame = ttk.Frame(info_frame, style="TFrame")
-                action_frame.pack(pady=10)
-                ttk.Button(action_frame, text="Читать", command=lambda: self.open_chapter_page(None), 
-                          style="TButton", width=10).pack(side="left", padx=5)
-                ttk.Button(action_frame, text="Прогресс чтения", style="TButton", width=15).pack(side="left", padx=5)
-
                 chapters_frame = ttk.Frame(info_frame, style="TFrame")
                 chapters_frame.pack(fill="both", expand=True, pady=10)
 
@@ -207,8 +201,8 @@ class NovelApp:
 
                 nav_frame = ttk.Frame(info_frame, style="TFrame")
                 nav_frame.pack(pady=10)
-                ttk.Button(nav_frame, text="Back", command=self.create_main_page, style="TButton").pack(side="left", pady=5)
-                ttk.Button(nav_frame, text="Add Chapter", command=lambda: self.open_add_chapter_page(novel_id), 
+                ttk.Button(nav_frame, text="Назад", command=self.create_main_page, style="TButton").pack(side="left", pady=5)
+                ttk.Button(nav_frame, text="Добавить главу", command=lambda: self.open_add_chapter_page(novel_id), 
                           style="TButton").pack(side="left", pady=5)
 
             style = ttk.Style()
@@ -267,7 +261,7 @@ class NovelApp:
 
         # Добавляем полосу прокрутки
         scrollbar = ttk.Scrollbar(text_frame, orient="vertical")
-        text_widget = tk.Text(text_frame, wrap="word", bg="#000000", fg="white", font=("Arial", 12),  # Уменьшен шрифт до 12
+        text_widget = tk.Text(text_frame, wrap="word", bg="#000000", fg="white", font=("Arial", 12),  # Шрифт 12
                              height=20, width=100, padx=10, pady=10, yscrollcommand=scrollbar.set)
         scrollbar.config(command=text_widget.yview)
         text_widget.pack(side="left", fill="both", expand=True)
@@ -302,14 +296,14 @@ class NovelApp:
         next_chapter = self.get_next_chapter(chapter_id, novel_id)
 
         if prev_chapter:
-            ttk.Button(nav_frame, text="Previous", command=lambda: self.display_chapter(prev_chapter), 
+            ttk.Button(nav_frame, text="Предыдущая", command=lambda: self.display_chapter(prev_chapter), 
                       style="TButton").pack(side="left", padx=5)
 
-        ttk.Button(nav_frame, text="Back", command=lambda: self.open_novel_page(novel_id), 
+        ttk.Button(nav_frame, text="Назад", command=lambda: self.open_novel_page(novel_id), 
                   style="TButton").pack(side="left", padx=5)
 
         if next_chapter:
-            ttk.Button(nav_frame, text="Next", command=lambda: self.display_chapter(next_chapter), 
+            ttk.Button(nav_frame, text="Следующая", command=lambda: self.display_chapter(next_chapter), 
                       style="TButton").pack(side="left", padx=5)
 
         # Стили
@@ -334,17 +328,17 @@ class NovelApp:
             widget.destroy()
 
         self.root.configure(bg="#000000")
-        ttk.Label(self.root, text="Title:", style="TLabel").pack(pady=5)
+        ttk.Label(self.root, text="Название:", style="TLabel").pack(pady=5)
         self.novel_title_entry = ttk.Entry(self.root, style="TEntry")
         self.novel_title_entry.pack(pady=5)
 
-        ttk.Button(self.root, text="Upload Cover", command=self.upload_cover, style="TButton").pack(pady=5)
-        ttk.Label(self.root, text="Description:", style="TLabel").pack(pady=5)
+        ttk.Button(self.root, text="Загрузить обложку", command=self.upload_cover, style="TButton").pack(pady=5)
+        ttk.Label(self.root, text="Описание:", style="TLabel").pack(pady=5)
         self.novel_description_entry = tk.Text(self.root, height=5, width=40, bg="#2a2a2a", fg="white")
         self.novel_description_entry.pack(pady=5)
 
-        ttk.Button(self.root, text="Add Novel", command=self.add_novel, style="TButton").pack(pady=10)
-        ttk.Button(self.root, text="Back", command=self.create_main_page, style="TButton").pack(pady=10)
+        ttk.Button(self.root, text="Добавить новеллу", command=self.add_novel, style="TButton").pack(pady=10)
+        ttk.Button(self.root, text="Назад", command=self.create_main_page, style="TButton").pack(pady=10)
 
         self.cover_data = None
 
@@ -379,16 +373,16 @@ class NovelApp:
             widget.destroy()
 
         self.root.configure(bg="#000000")
-        ttk.Label(self.root, text="Chapter Title:", style="TLabel").pack(pady=10)
+        ttk.Label(self.root, text="Название главы:", style="TLabel").pack(pady=10)
         self.chapter_title_entry = ttk.Entry(self.root, style="TEntry")
         self.chapter_title_entry.pack(pady=10)
 
-        ttk.Label(self.root, text="Content:", style="TLabel").pack(pady=10)
+        ttk.Label(self.root, text="Содержание:", style="TLabel").pack(pady=10)
         self.chapter_content_entry = tk.Text(self.root, bg="#2a2a2a", fg="white")
         self.chapter_content_entry.pack(pady=10)
 
-        ttk.Button(self.root, text="Add Chapter", command=lambda: self.add_chapter(novel_id), style="TButton").pack(pady=10)
-        ttk.Button(self.root, text="Back", command=lambda: self.open_novel_page(novel_id), style="TButton").pack(pady=10)
+        ttk.Button(self.root, text="Добавить главу", command=lambda: self.add_chapter(novel_id), style="TButton").pack(pady=10)
+        ttk.Button(self.root, text="Назад", command=lambda: self.open_novel_page(novel_id), style="TButton").pack(pady=10)
 
     def add_chapter(self, novel_id):
         title = self.chapter_title_entry.get()
