@@ -30,6 +30,7 @@ class NovelApp:
                     description TEXT
                 )
             """)
+            # Проверка и создание таблицы chapters с колонкой update_date
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chapters (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
