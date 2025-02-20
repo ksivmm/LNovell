@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, messagebox, filedialog
 from PIL import Image, ImageTk
 import sqlite3
 import io
@@ -22,6 +22,15 @@ class NovelApp:
                 description TEXT
             )
         """)
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS chapters (
+                id INTEGER PRIMARY KEY,
+                novel_id INTEGER,
+                title TEXT,
+                content TEXT,
+                FOREIGN KEY (novel_id) REFERENCES novels (id)
+            )
+        """)
         self.conn.commit()
 
     def create_main_page(self):
@@ -31,7 +40,9 @@ class NovelApp:
         ttk.Label(self.root, text="Catalog of Novels").pack(pady=10)
         self.novel_frame = ttk.Frame(self.root)
         self.novel_frame.pack(fill="both", expand=True)
+
         self.load_novels()
+
         ttk.Button(self.root, text="Add Novel", command=self.open_add_novel_page).pack(pady=10)
 
     def load_novels(self):
@@ -42,7 +53,7 @@ class NovelApp:
         row_num, col_num = 0, 0
 
         for novel_id, title, cover_data in self.cursor.fetchall():
-            if cover_data and isinstance(cover_data, bytes):
+            if cover_data:
                 image = Image.open(io.BytesIO(cover_data))
             else:
                 image = Image.new("RGB", (161, 225), "gray")
@@ -61,6 +72,56 @@ class NovelApp:
             if col_num == 7:
                 col_num = 0
                 row_num += 2
+
+    def open_novel_page(self, novel_id):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.cursor.execute("SELECT * FROM novels WHERE id=?", (novel_id,))
+        novel = self.cursor.fetchone()
+
+        cover_data = novel[2]
+        if cover_data:
+            image = Image.open(io.BytesIO(cover_data))
+        else:
+            image = Image.new("RGB", (161, 225), "gray")
+
+        image = image.resize((161, 225))
+        novel_cover = ImageTk.PhotoImage(image)
+
+        ttk.Label(self.root, image=novel_cover).pack(pady=10)
+        self.root.image = novel_cover
+        ttk.Label(self.root, text=novel[3], wraplength=600).pack(pady=10)
+
+        self.chapter_list = ttk.Treeview(self.root, columns=("Title"), show="headings")
+        self.chapter_list.heading("Title", text="Title")
+        self.chapter_list.pack(fill="both", expand=True)
+        self.chapter_list.bind("<Double-1>", self.open_chapter_page)
+
+        self.cursor.execute("SELECT id, title FROM chapters WHERE novel_id=?", (novel_id,))
+        for row in self.cursor.fetchall():
+            self.chapter_list.insert("", "end", values=(row[1],))
+
+        ttk.Button(self.root, text="Add Chapter", command=lambda: self.open_add_chapter_page(novel_id)).pack(pady=10)
+        ttk.Button(self.root, text="Back", command=self.create_main_page).pack(pady=10)
+
+    def open_chapter_page(self, event):
+        selected_item = self.chapter_list.selection()[0]
+        chapter_title = self.chapter_list.item(selected_item, "values")[0]
+
+        self.cursor.execute("SELECT content FROM chapters WHERE title=?", (chapter_title,))
+        chapter = self.cursor.fetchone()
+
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        ttk.Label(self.root, text=chapter_title).pack(pady=10)
+        text_widget = tk.Text(self.root, wrap="word")
+        text_widget.pack(fill="both", expand=True)
+        text_widget.insert("1.0", chapter[0])
+        text_widget.config(state="disabled")
+
+        ttk.Button(self.root, text="Back", command=self.create_main_page).pack(pady=10)
 
     def open_add_novel_page(self):
         for widget in self.root.winfo_children():
@@ -93,6 +154,29 @@ class NovelApp:
             self.cursor.execute("INSERT INTO novels (title, cover, description) VALUES (?, ?, ?)", (title, self.cover_data, description))
             self.conn.commit()
         self.create_main_page()
+
+    def open_add_chapter_page(self, novel_id):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        ttk.Label(self.root, text="Chapter Title:").pack(pady=10)
+        self.chapter_title_entry = ttk.Entry(self.root)
+        self.chapter_title_entry.pack(pady=10)
+
+        ttk.Label(self.root, text="Content:").pack(pady=10)
+        self.chapter_content_entry = tk.Text(self.root)
+        self.chapter_content_entry.pack(pady=10)
+
+        ttk.Button(self.root, text="Add Chapter", command=lambda: self.add_chapter(novel_id)).pack(pady=10)
+        ttk.Button(self.root, text="Back", command=lambda: self.open_novel_page(novel_id)).pack(pady=10)
+
+    def add_chapter(self, novel_id):
+        title = self.chapter_title_entry.get()
+        content = self.chapter_content_entry.get("1.0", "end").strip()
+        if title and content:
+            self.cursor.execute("INSERT INTO chapters (novel_id, title, content) VALUES (?, ?, ?)", (novel_id, title, content))
+            self.conn.commit()
+        self.open_novel_page(novel_id)
 
 if __name__ == "__main__":
     root = tk.Tk()
