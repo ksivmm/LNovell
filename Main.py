@@ -172,7 +172,7 @@ class NovelApp:
                 main_frame = ttk.Frame(self.root, style="TFrame")
                 main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-                # Обложка слева сверху на уровне бокса с главами
+                # Обложка слева сверху
                 cover_frame = ttk.Frame(main_frame, style="Cover.TFrame")
                 cover_frame.pack(side="left", padx=10, pady=10)
                 cover_label = ttk.Label(cover_frame, image=novel_cover, background="#000000")
@@ -181,43 +181,29 @@ class NovelApp:
 
                 # Информация под обложкой (название и описание)
                 info_frame = ttk.Frame(cover_frame, style="TFrame")
-                info_frame.pack(side="top", fill="x", pady=10)
+                info_frame.pack(side="top", fill="both", expand=True, pady=10)
 
-                # Название и описание под обложкой
+                # Название под обложкой
                 title_label = ttk.Label(info_frame, text=novel[1], font=("Arial", 20, "bold"), 
                                        foreground="white", background="#000000")
                 title_label.pack(pady=5)
 
+                # Описание под названием, растянутое вниз
                 desc = novel[3] or "Легендарный механик (Новелла)"
-                # Добавляем прокрутку для описания
                 desc_frame = ttk.Frame(info_frame, style="TFrame")
                 desc_frame.pack(fill="both", expand=True)
                 scrollbar = ttk.Scrollbar(desc_frame, orient="vertical")
                 desc_widget = tk.Text(desc_frame, wrap="word", bg="#000000", fg="white", font=("Arial", 12), 
-                                     height=5, width=30, yscrollcommand=scrollbar.set)
+                                     height=20, width=30, yscrollcommand=scrollbar.set)
                 desc_widget.insert("1.0", desc)
                 desc_widget.config(state="disabled")
                 desc_widget.pack(side="left", fill="both", expand=True)
                 scrollbar.config(command=desc_widget.yview)
                 scrollbar.pack(side="right", fill="y")
 
-                # Правая часть с описанием, растянутым вверх и вниз
+                # Правая сторона с списком глав и кнопками (не трогаем)
                 right_frame = ttk.Frame(main_frame, style="TFrame")
                 right_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-
-                # Описание, растянутое вертикально
-                desc_full_frame = ttk.Frame(right_frame, style="TFrame")
-                desc_full_frame.pack(fill="both", expand=True, pady=10)
-
-                desc_full_widget = tk.Text(desc_full_frame, wrap="word", bg="#000000", fg="white", font=("Arial", 12), 
-                                         height=20, width=60, yscrollcommand=scrollbar.set)
-                desc_full_widget.insert("1.0", desc)
-                desc_full_widget.config(state="disabled")
-                desc_full_widget.pack(fill="both", expand=True)
-
-                scrollbar = ttk.Scrollbar(desc_full_frame, orient="vertical")
-                scrollbar.config(command=desc_full_widget.yview)
-                scrollbar.pack(side="right", fill="y")
 
                 chapters_frame = ttk.Frame(right_frame, style="TFrame")
                 chapters_frame.pack(fill="both", expand=True, pady=10)
