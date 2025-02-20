@@ -4,7 +4,6 @@ from PIL import Image, ImageTk
 import sqlite3
 import io
 import random
-from datetime import datetime, timedelta
 
 class NovelApp:
     def __init__(self, root):
@@ -30,14 +29,13 @@ class NovelApp:
                     description TEXT
                 )
             """)
-            # Проверка и создание таблицы chapters с колонкой update_date
+            # Упрощенная таблица chapters без update_date
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chapters (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     novel_id INTEGER,
                     title TEXT,
                     content TEXT,
-                    update_date TEXT,
                     FOREIGN KEY (novel_id) REFERENCES novels (id)
                 )
             """)
@@ -123,10 +121,8 @@ class NovelApp:
                                        font=("Arial", 12, "bold"), wraplength=200, justify="center")
                 title_label.pack(pady=2)
 
-                tags = ["В наличии", "Новелла"]
-                if random.choice([True, False]):
-                    tags.append("Корея")
-                tags_text = " | ".join(tags)
+                # Оставляем только "Новелла" как тег
+                tags_text = "Новелла"
                 tags_label = ttk.Label(novel_card, text=tags_text, foreground="#a0a0a0", background="#2a2a2a", 
                                       font=("Arial", 8), wraplength=200, justify="center")
                 tags_label.pack(pady=(0, 5))
@@ -198,19 +194,15 @@ class NovelApp:
                 chapters_frame = ttk.Frame(main_frame, style="TFrame")
                 chapters_frame.pack(fill="both", expand=True, pady=10)
 
-                self.chapter_list = ttk.Treeview(chapters_frame, columns=("Title", "Date"), 
+                self.chapter_list = ttk.Treeview(chapters_frame, columns=("Title"), 
                                                 show="headings", height=15, style="Treeview")
                 self.chapter_list.heading("Title", text="Название главы")
-                self.chapter_list.heading("Date", text="Дата")
-                self.chapter_list.column("Title", width=400)
-                self.chapter_list.column("Date", width=150)
+                self.chapter_list.column("Title", width=550)
                 self.chapter_list.pack(fill="both", expand=True)
 
-                self.cursor.execute("SELECT id, title, update_date FROM chapters WHERE novel_id=?", (novel_id,))
-                for chapter_id, title, update_date in self.cursor.fetchall():
-                    if not update_date:
-                        update_date = (datetime.now() - timedelta(days=random.randint(1, 365))).strftime("%d.%m.%Y")
-                    self.chapter_list.insert("", "end", values=(title, update_date))
+                self.cursor.execute("SELECT id, title FROM chapters WHERE novel_id=?", (novel_id,))
+                for chapter_id, title in self.cursor.fetchall():
+                    self.chapter_list.insert("", "end", values=(title,))
 
                 self.chapter_list.bind("<Double-1>", lambda e: self.open_chapter_page(e))
 
@@ -260,7 +252,7 @@ class NovelApp:
             widget.destroy()
 
         self.root.configure(bg="#000000")  # Черный фон
-        chapter_id, novel_id, title, content, update_date = chapter
+        chapter_id, novel_id, title, content, _ = chapter  # Убрали update_date
 
         main_frame = ttk.Frame(self.root, style="TFrame")
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -392,17 +384,12 @@ class NovelApp:
         self.chapter_content_entry = tk.Text(self.root, bg="#2a2a2a", fg="white")
         self.chapter_content_entry.pack(pady=10)
 
-        ttk.Label(self.root, text="Update Date (DD.MM.YYYY):", style="TLabel").pack(pady=5)
-        self.chapter_date_entry = ttk.Entry(self.root, style="TEntry")
-        self.chapter_date_entry.pack(pady=5)
-
         ttk.Button(self.root, text="Add Chapter", command=lambda: self.add_chapter(novel_id), style="TButton").pack(pady=10)
         ttk.Button(self.root, text="Back", command=lambda: self.open_novel_page(novel_id), style="TButton").pack(pady=10)
 
     def add_chapter(self, novel_id):
         title = self.chapter_title_entry.get()
         content = self.chapter_content_entry.get("1.0", "end").strip()
-        update_date = self.chapter_date_entry.get() or (datetime.now() - timedelta(days=random.randint(1, 365))).strftime("%d.%m.%Y")
         if not title:
             messagebox.showerror("Ошибка", "Введите название главы!")
             return
@@ -410,8 +397,8 @@ class NovelApp:
             messagebox.showerror("Ошибка", "Введите содержание главы!")
             return
         try:
-            self.cursor.execute("INSERT INTO chapters (novel_id, title, content, update_date) VALUES (?, ?, ?, ?)",
-                               (novel_id, title, content, update_date))
+            self.cursor.execute("INSERT INTO chapters (novel_id, title, content) VALUES (?, ?, ?)",
+                               (novel_id, title, content))
             self.conn.commit()
             self.open_novel_page(novel_id)
         except sqlite3.Error as e:
