@@ -172,7 +172,7 @@ class NovelApp:
                 main_frame = ttk.Frame(self.root, style="TFrame")
                 main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-                # Обложка слева
+                # Обложка слева сверху на уровне бокса с главами
                 cover_frame = ttk.Frame(main_frame, style="Cover.TFrame")
                 cover_frame.pack(side="left", padx=10, pady=10)
                 cover_label = ttk.Label(cover_frame, image=novel_cover, background="#000000")
@@ -201,9 +201,23 @@ class NovelApp:
                 scrollbar.config(command=desc_widget.yview)
                 scrollbar.pack(side="right", fill="y")
 
-                # Пустой фрейм справа для выравнивания
+                # Правая часть с описанием, растянутым вверх и вниз
                 right_frame = ttk.Frame(main_frame, style="TFrame")
                 right_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+                # Описание, растянутое вертикально
+                desc_full_frame = ttk.Frame(right_frame, style="TFrame")
+                desc_full_frame.pack(fill="both", expand=True, pady=10)
+
+                desc_full_widget = tk.Text(desc_full_frame, wrap="word", bg="#000000", fg="white", font=("Arial", 12), 
+                                         height=20, width=60, yscrollcommand=scrollbar.set)
+                desc_full_widget.insert("1.0", desc)
+                desc_full_widget.config(state="disabled")
+                desc_full_widget.pack(fill="both", expand=True)
+
+                scrollbar = ttk.Scrollbar(desc_full_frame, orient="vertical")
+                scrollbar.config(command=desc_full_widget.yview)
+                scrollbar.pack(side="right", fill="y")
 
                 chapters_frame = ttk.Frame(right_frame, style="TFrame")
                 chapters_frame.pack(fill="both", expand=True, pady=10)
@@ -405,24 +419,4 @@ class NovelApp:
         ttk.Button(self.root, text="Добавить главу", command=lambda: self.add_chapter(novel_id), style="TButton").pack(pady=10)
         ttk.Button(self.root, text="Назад", command=lambda: self.open_novel_page(novel_id), style="TButton").pack(pady=10)
 
-    def add_chapter(self, novel_id):
-        title = self.chapter_title_entry.get()
-        content = self.chapter_content_entry.get("1.0", "end").strip()
-        if not title:
-            messagebox.showerror("Ошибка", "Введите название главы!")
-            return
-        if not content:
-            messagebox.showerror("Ошибка", "Введите содержание главы!")
-            return
-        try:
-            self.cursor.execute("INSERT INTO chapters (novel_id, title, content) VALUES (?, ?, ?)",
-                               (novel_id, title, content))
-            self.conn.commit()
-            self.open_novel_page(novel_id)
-        except sqlite3.Error as e:
-            messagebox.showerror("Ошибка базы данных", f"Не удалось добавить главу: {e}")
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = NovelApp(root)
-    root.mainloop()
+    def add_chapter(
