@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from tkinter import PhotoImage
+from PIL import Image, ImageTk
 import sqlite3
-import os
+import io
 
 class NovelApp:
     def __init__(self, root):
@@ -34,133 +34,87 @@ class NovelApp:
         self.conn.commit()
 
     def create_main_page(self):
-        self.main_frame = ttk.Frame(self.root)
-        self.main_frame.pack(fill="both", expand=True)
+        if hasattr(self, "current_frame"):
+            self.current_frame.destroy()
 
-        self.catalog_label = ttk.Label(self.main_frame, text="Catalog of Novels")
-        self.catalog_label.pack(pady=10)
+        self.current_frame = ttk.Frame(self.root)
+        self.current_frame.pack(fill="both", expand=True)
 
-        self.novel_frame = ttk.Frame(self.main_frame)
+        ttk.Label(self.current_frame, text="Catalog of Novels", font=("Arial", 14)).pack(pady=10)
+
+        self.novel_frame = ttk.Frame(self.current_frame)
         self.novel_frame.pack(fill="both", expand=True)
 
         self.load_novels()
 
-        self.add_novel_button = ttk.Button(self.main_frame, text="Add Novel", command=self.open_add_novel_page)
-        self.add_novel_button.pack(pady=10)
+        ttk.Button(self.current_frame, text="Add Novel", command=self.open_add_novel_page).pack(pady=10)
 
     def load_novels(self):
         for widget in self.novel_frame.winfo_children():
             widget.destroy()
 
         self.cursor.execute("SELECT * FROM novels")
-        row_num = 0
-        col_num = 0
-        for row in self.cursor.fetchall():
-            cover_data = row[2]
-            novel_cover = PhotoImage(width=161, height=225)  # Заглушка
+        novels = self.cursor.fetchall()
+
+        for i, (novel_id, title, cover_data, _) in enumerate(novels):
+            if cover_data:
+                image = Image.open(io.BytesIO(cover_data))
+                image = image.resize((100, 150), Image.Resampling.LANCZOS)
+                novel_cover = ImageTk.PhotoImage(image)
+            else:
+                novel_cover = None
 
             cover_label = ttk.Label(self.novel_frame, image=novel_cover)
             cover_label.image = novel_cover
-            cover_label.grid(row=row_num, column=col_num, padx=5, pady=5)
-            cover_label.bind("<Button-1>", lambda e, novel_id=row[0]: self.open_novel_page(novel_id))
+            cover_label.grid(row=i // 5, column=i % 5, padx=5, pady=5)
+            cover_label.bind("<Button-1>", lambda e, novel_id=novel_id: self.open_novel_page(novel_id))
 
-            title_label = ttk.Label(self.novel_frame, text=row[1], width=20, anchor="center")
-            title_label.grid(row=row_num+1, column=col_num, padx=5, pady=5)
-
-            col_num += 1
-            if col_num == 7:
-                col_num = 0
-                row_num += 2 
+            ttk.Label(self.novel_frame, text=title, width=20).grid(row=(i // 5) + 1, column=i % 5, padx=5, pady=5)
 
     def open_novel_page(self, novel_id):
-        self.main_frame.pack_forget()
-        self.novel_frame = ttk.Frame(self.root)
-        self.novel_frame.pack(fill="both", expand=True)
+        self.current_frame.destroy()
+        self.current_frame = ttk.Frame(self.root)
+        self.current_frame.pack(fill="both", expand=True)
 
         self.cursor.execute("SELECT * FROM novels WHERE id=?", (novel_id,))
         novel = self.cursor.fetchone()
 
-        cover_data = novel[2]
-        novel_cover = PhotoImage(width=161, height=225)  # Заглушка
+        title, cover_data, description = novel[1:]
 
-        self.novel_cover = ttk.Label(self.novel_frame, image=novel_cover)
-        self.novel_cover.image = novel_cover
-        self.novel_cover.pack(pady=10)
+        if cover_data:
+            image = Image.open(io.BytesIO(cover_data))
+            image = image.resize((200, 300), Image.Resampling.LANCZOS)
+            novel_cover = ImageTk.PhotoImage(image)
+        else:
+            novel_cover = None
 
-        self.novel_description = ttk.Label(self.novel_frame, text=novel[3])
-        self.novel_description.pack(pady=10)
+        ttk.Label(self.current_frame, image=novel_cover).pack(pady=10)
+        ttk.Label(self.current_frame, text=title, font=("Arial", 16)).pack()
+        ttk.Label(self.current_frame, text=description).pack()
 
-        self.chapter_list = ttk.Treeview(self.novel_frame, columns=("Title"), show="headings")
-        self.chapter_list.heading("Title", text="Title")
-        self.chapter_list.pack(fill="both", expand=True)
-        self.chapter_list.bind("<Double-1>", self.open_chapter_page)
-
-        self.cursor.execute("SELECT * FROM chapters WHERE novel_id=?", (novel_id,))
-        for row in self.cursor.fetchall():
-            self.chapter_list.insert("", "end", values=(row[2],))
-
-        self.add_chapter_button = ttk.Button(self.novel_frame, text="Add Chapter", command=lambda: self.open_add_chapter_page(novel_id))
-        self.add_chapter_button.pack(pady=10)
-
-        self.back_button = ttk.Button(self.novel_frame, text="Back", command=self.back_to_main)
-        self.back_button.pack(pady=10)
-
-    def open_chapter_page(self, event):
-        selected_item = self.chapter_list.selection()
-        if not selected_item:
-            return
-
-        chapter_title = self.chapter_list.item(selected_item[0], "values")[0]
-        self.cursor.execute("SELECT * FROM chapters WHERE title=?", (chapter_title,))
-        chapter = self.cursor.fetchone()
-
-        self.novel_frame.pack_forget()
-        self.chapter_frame = ttk.Frame(self.root)
-        self.chapter_frame.pack(fill="both", expand=True)
-
-        self.chapter_title_label = ttk.Label(self.chapter_frame, text=chapter[2])
-        self.chapter_title_label.pack(pady=10)
-
-        self.chapter_content = tk.Text(self.chapter_frame)
-        self.chapter_content.pack(fill="both", expand=True)
-        self.chapter_content.insert("1.0", chapter[3])
-
-        self.nav_frame = ttk.Frame(self.chapter_frame)
-        self.nav_frame.pack(pady=10)
-
-        self.back_button = ttk.Button(self.nav_frame, text="Back", command=self.back_to_novel)
-        self.back_button.pack(side="left")
-
-    def back_to_main(self):
-        self.novel_frame.pack_forget()
-        self.main_frame.pack(fill="both", expand=True)
-
-    def back_to_novel(self):
-        self.chapter_frame.pack_forget()
-        self.novel_frame.pack(fill="both", expand=True)
+        ttk.Button(self.current_frame, text="Back", command=self.create_main_page).pack(pady=10)
 
     def open_add_novel_page(self):
-        self.main_frame.pack_forget()
-        self.add_novel_frame = ttk.Frame(self.root)
-        self.add_novel_frame.pack(fill="both", expand=True)
+        self.current_frame.destroy()
+        self.current_frame = ttk.Frame(self.root)
+        self.current_frame.pack(fill="both", expand=True)
 
-        self.novel_title_label = ttk.Label(self.add_novel_frame, text="Title:")
-        self.novel_title_label.pack(pady=10)
-        self.novel_title_entry = ttk.Entry(self.add_novel_frame)
-        self.novel_title_entry.pack(pady=10)
+        ttk.Label(self.current_frame, text="Add a New Novel", font=("Arial", 14)).pack(pady=10)
 
-        self.novel_cover_label = ttk.Label(self.add_novel_frame, text="Cover:")
-        self.novel_cover_label.pack(pady=10)
-        self.novel_cover_button = ttk.Button(self.add_novel_frame, text="Upload Cover", command=self.upload_cover)
-        self.novel_cover_button.pack(pady=10)
+        ttk.Label(self.current_frame, text="Title:").pack()
+        self.novel_title_entry = ttk.Entry(self.current_frame)
+        self.novel_title_entry.pack()
 
-        self.novel_description_label = ttk.Label(self.add_novel_frame, text="Description:")
-        self.novel_description_label.pack(pady=10)
-        self.novel_description_entry = ttk.Entry(self.add_novel_frame)
-        self.novel_description_entry.pack(pady=10)
+        ttk.Label(self.current_frame, text="Cover:").pack()
+        self.upload_button = ttk.Button(self.current_frame, text="Upload Cover", command=self.upload_cover)
+        self.upload_button.pack()
 
-        self.add_button = ttk.Button(self.add_novel_frame, text="Add Novel", command=self.add_novel)
-        self.add_button.pack(pady=10)
+        ttk.Label(self.current_frame, text="Description:").pack()
+        self.novel_description_entry = ttk.Entry(self.current_frame)
+        self.novel_description_entry.pack()
+
+        ttk.Button(self.current_frame, text="Add Novel", command=self.add_novel).pack(pady=10)
+        ttk.Button(self.current_frame, text="Back", command=self.create_main_page).pack(pady=10)
 
         self.cover_data = None
 
@@ -173,10 +127,14 @@ class NovelApp:
     def add_novel(self):
         title = self.novel_title_entry.get()
         description = self.novel_description_entry.get()
+
+        if not title.strip():
+            messagebox.showerror("Error", "Title cannot be empty")
+            return
+
         self.cursor.execute("INSERT INTO novels (title, cover, description) VALUES (?, ?, ?)", (title, self.cover_data, description))
         self.conn.commit()
-        self.back_to_main()
-        self.load_novels()
+        self.create_main_page()
 
 if __name__ == "__main__":
     root = tk.Tk()
