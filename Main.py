@@ -175,16 +175,25 @@ class NovelApp:
                 cover_label.image = novel_cover
                 cover_label.pack()
 
-                # Информация справа
-                info_frame = ttk.Frame(main_frame, style="TFrame")
-                info_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+                # Информация под обложкой
+                info_frame = ttk.Frame(cover_frame, style="TFrame")
+                info_frame.pack(side="top", fill="x", pady=10)
 
-                # Только название
+                # Название и описание под обложкой
                 title_label = ttk.Label(info_frame, text=novel[1], font=("Arial", 20, "bold"), 
                                        foreground="white", background="#000000")
-                title_label.pack(pady=20)
+                title_label.pack(pady=5)
 
-                chapters_frame = ttk.Frame(info_frame, style="TFrame")
+                desc = novel[3] or "Легендарный механик (Новелла)"
+                desc_label = ttk.Label(info_frame, text=desc, font=("Arial", 12), 
+                                      foreground="#a0a0a0", background="#000000", wraplength=200, justify="left")
+                desc_label.pack(pady=5)
+
+                # Пустой фрейм справа для выравнивания
+                right_frame = ttk.Frame(main_frame, style="TFrame")
+                right_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+                chapters_frame = ttk.Frame(right_frame, style="TFrame")
                 chapters_frame.pack(fill="both", expand=True, pady=10)
 
                 self.chapter_list = ttk.Treeview(chapters_frame, columns=("Title"), 
@@ -199,7 +208,7 @@ class NovelApp:
 
                 self.chapter_list.bind("<Double-1>", lambda e: self.open_chapter_page(e))
 
-                nav_frame = ttk.Frame(info_frame, style="TFrame")
+                nav_frame = ttk.Frame(right_frame, style="TFrame")
                 nav_frame.pack(pady=10)
                 ttk.Button(nav_frame, text="Назад", command=self.create_main_page, style="TButton").pack(side="left", pady=5)
                 ttk.Button(nav_frame, text="Добавить главу", command=lambda: self.open_add_chapter_page(novel_id), 
@@ -280,10 +289,10 @@ class NovelApp:
                 else:
                     text_widget.insert("end", f"{para.strip()}\n\n", "normal")
 
-        # Настройка тегов для форматирования
-        text_widget.tag_config("normal", foreground="white", justify="center")
-        text_widget.tag_config("heading1", foreground="#4a90e2", font=("Arial", 18, "bold"), justify="center")
-        text_widget.tag_config("heading2", foreground="#4a90e2", font=("Arial", 16, "bold"), justify="center")
+        # Настройка тегов для форматирования (выравнивание слева)
+        text_widget.tag_config("normal", foreground="white", justify="left")
+        text_widget.tag_config("heading1", foreground="#4a90e2", font=("Arial", 18, "bold"), justify="left")
+        text_widget.tag_config("heading2", foreground="#4a90e2", font=("Arial", 16, "bold"), justify="left")
         text_widget.tag_config("bullet", foreground="white", lmargin1=20, lmargin2=20, justify="left")
 
         text_widget.config(state="disabled")
