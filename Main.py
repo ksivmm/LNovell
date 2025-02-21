@@ -122,8 +122,7 @@ class NovelApp:
             style.configure("Rating.TLabel", background="#4a90e2", foreground="white", font=("Arial", 10, "bold"), 
                            borderwidth=1, relief="solid", padding=2, anchor="center")
 
-            total_width = 177 * 6 + 30  # 6 новелл по 177px + отступы
-            self.novel_frame.place(x=(self.novel_frame.winfo_screenwidth() - total_width) // 2, y=0)  # Центрирование
+            total_width = 177 * 7 + 30  # 7 новелл по 177px + отступы
 
             for novel_id, title, cover_data, description in novels:
                 if cover_data and isinstance(cover_data, bytes):
@@ -159,7 +158,7 @@ class NovelApp:
                 novel_card.bind("<Button-1>", lambda e, nid=novel_id: self.open_novel_page(nid))
 
                 col_num += 1
-                if col_num == 6:  # 6 новелл по горизонтали
+                if col_num == 7:  # 7 новелл по горизонтали
                     col_num = 0
                     row_num += 1
 
